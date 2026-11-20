@@ -1,0 +1,1662 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linux X Mrx — Bot Control Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07090c;
+      --card-bg: #0f1318;
+      --card-inner: #151a22;
+      --card-hover: #19202a;
+      --border: #1f2733;
+      --border-focus: #ef4444;
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --red: #ef4444;
+      --red-hover: #dc2626;
+      --red-subtle: rgba(239, 68, 68, 0.12);
+      --red-glow: rgba(239, 68, 68, 0.25);
+      --green: #10b981;
+      --green-subtle: rgba(16, 185, 129, 0.12);
+      --yellow: #f59e0b;
+      --yellow-subtle: rgba(245, 158, 11, 0.12);
+      --blue: #0ea5e9;
+      --blue-subtle: rgba(14, 165, 233, 0.12);
+      --purple: #8b5cf6;
+      --purple-subtle: rgba(139, 92, 246, 0.12);
+      --text: #f8fafc;
+      --muted: #8b99ad;
+      --dimmed: #4b586d;
+      --font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font);
+    }
+
+    button, a, select, input, .btn-primary, .btn-sm, .btn-outline {
+      cursor: pointer;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #111721 0%, var(--bg) 75%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      letter-spacing: -0.01em;
+    }
+
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .icon {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2;
+      stroke: currentColor;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      display: inline-block;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+    .icon-lg { width: 20px; height: 20px; }
+    .icon-sm { width: 14px; height: 14px; }
+
+    .view {
+      display: none;
+      position: relative;
+      z-index: 1;
+      width: 100%;
+    }
+    .view.active {
+      display: flex;
+    }
+
+    /* ========================================================
+       LOGIN VIEW
+    ======================================================== */
+    #loginView {
+      min-height: 100vh;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .auth-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 38px 36px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), 0 0 40px rgba(239, 68, 68, 0.05);
+      position: relative;
+    }
+
+    .auth-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--red), transparent);
+    }
+
+    .brand-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 26px;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--red-subtle);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: var(--red);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 14px;
+    }
+
+    .brand-title {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #fff;
+    }
+
+    .brand-dev {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .brand-dev span {
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--card-inner);
+      color: #fff;
+      font-size: 13px;
+      font-family: var(--mono);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--red-glow);
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 13px 18px;
+      border: none;
+      border-radius: 8px;
+      background: var(--red);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--red-hover);
+    }
+
+    .btn-primary:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #statusMessage {
+      margin-top: 16px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .alert {
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .alert-success {
+      background: var(--green-subtle);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #6ee7b7;
+    }
+    .alert-danger {
+      background: var(--red-subtle);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .hwid-card {
+      margin-top: 22px;
+      padding: 12px 14px;
+      background: var(--card-inner);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .hwid-title {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hwid-value {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    /* ========================================================
+       NAVBAR
+    ======================================================== */
+    .navbar {
+      height: 64px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15, 19, 24, 0.92);
+      backdrop-filter: blur(12px);
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-box {
+      width: 36px;
+      height: 36px;
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--red);
+    }
+
+    .nav-title {
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-dev {
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .nav-dev b {
+      color: var(--red);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .role-badge {
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .role-admin {
+      background: var(--red-subtle);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: var(--red);
+    }
+
+    .role-client {
+      background: var(--blue-subtle);
+      border: 1px solid rgba(14, 165, 233, 0.35);
+      color: var(--blue);
+    }
+
+    .btn-outline {
+      background: var(--card-inner);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-outline:hover {
+      background: var(--card-hover);
+      border-color: var(--muted);
+    }
+
+    /* Container */
+    .dashboard-container {
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Stat Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      position: relative;
+    }
+
+    .stat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .stat-icon {
+      color: var(--dimmed);
+    }
+
+    .stat-value {
+      font-size: 24px;
+      font-weight: 800;
+      font-family: var(--mono);
+      letter-spacing: -0.02em;
+      margin-bottom: 4px;
+    }
+
+    .stat-desc {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .panel-header {
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.01);
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .panel-body {
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Buttons */
+    .btn-sm {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--card-inner);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .btn-sm:hover { background: var(--card-hover); border-color: var(--muted); }
+    .btn-sm.btn-start { color: var(--green); }
+    .btn-sm.btn-start:hover { background: var(--green-subtle); border-color: var(--green); }
+    .btn-sm.btn-stop { color: var(--red); }
+    .btn-sm.btn-stop:hover { background: var(--red-subtle); border-color: var(--red); }
+    .btn-sm.btn-warn { color: var(--yellow); }
+    .btn-sm.btn-warn:hover { background: var(--yellow-subtle); border-color: var(--yellow); }
+
+    /* Tables */
+    .data-table-container {
+      max-height: 280px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    th {
+      background: var(--card-inner);
+      padding: 10px 14px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      position: sticky;
+      top: 0;
+      border-bottom: 1px solid var(--border);
+      z-index: 1;
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border-subtle);
+      color: #cbd5e1;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.015); }
+
+    .proc-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: var(--card-inner);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .proc-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--mono);
+      font-size: 13px;
+    }
+    .proc-badge {
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .badge-running { background: var(--green-subtle); color: var(--green); border: 1px solid rgba(16, 185, 129, 0.35); }
+    .badge-stopped { background: rgba(139, 155, 180, 0.1); color: var(--muted); border: 1px solid var(--border); }
+
+    .terminal-window {
+      background: #050709;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 12px 14px;
+      height: 180px;
+      overflow-y: auto;
+      font-family: var(--mono);
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .log-line { display: flex; gap: 8px; line-height: 1.45; }
+    .log-time { color: var(--dimmed); }
+    .log-tag.info { color: var(--blue); }
+    .log-tag.success { color: var(--green); }
+    .log-tag.warn { color: var(--yellow); }
+    .log-tag.error { color: var(--red); }
+    .log-text { color: #cbd5e1; }
+
+    footer {
+      margin-top: auto;
+      border-top: 1px solid var(--border);
+      padding: 16px 28px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      z-index: 1;
+    }
+    footer b { color: var(--red); }
+
+    .client-hero {
+      background: linear-gradient(135deg, rgba(14, 165, 233, 0.05) 0%, var(--card-bg) 100%);
+      border: 1px solid rgba(14, 165, 233, 0.2);
+      border-radius: 10px;
+      padding: 22px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .client-hero h2 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .client-hero p {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="mouseFxCanvas" style="position: fixed; inset: 0; pointer-events: none; z-index: 99999;"></canvas>
+<div class="bg-grid"></div>
+
+<!-- ========================================================
+     1. LOGIN VIEW
+======================================================== -->
+<section id="loginView" class="view active">
+  <div class="auth-card">
+    <div class="brand-header">
+      <div class="brand-badge">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Authentication Gateway</span>
+      </div>
+      <h1 class="brand-title">Linux X Mrx</h1>
+      <p class="brand-dev">Bot dev: <span>Linux X Mrx</span></p>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="loginUsername">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        Username Account
+      </label>
+      <input type="text" id="loginUsername" placeholder="Il tuo Username" autocomplete="username" spellcheck="false">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="loginPassword">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Password
+      </label>
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password">
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="licenseKey">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        License Key (Monthly / Lifetime)
+      </label>
+      <input type="text" id="licenseKey" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" spellcheck="false">
+    </div>
+
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+      <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); cursor:pointer;">
+        <input type="checkbox" id="rememberCredentials" checked style="accent-color:var(--red); width:15px; height:15px; cursor:pointer;">
+        <span>Ricorda credenziali su questo browser</span>
+      </label>
+    </div>
+
+    <button id="loginBtn" class="btn-primary" onclick="validateLicense()">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+      <span>Accedi al Pannello</span>
+    </button>
+
+    <div id="statusMessage"></div>
+
+    <div class="hwid-card">
+      <div class="hwid-title">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Hardware ID (HWID Bind)
+      </div>
+      <div class="hwid-value" id="loginHwidDisplay">Caricamento...</div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ========================================================
+     2. ADMIN DASHBOARD VIEW (LIFETIME KEY)
+======================================================== -->
+<section id="adminView" class="view" style="flex-direction: column;">
+  <header class="navbar">
+    <div class="nav-left">
+      <div class="logo-box">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      </div>
+      <div>
+        <div class="nav-title">Linux X Mrx — Master Admin</div>
+        <div class="nav-dev">Bot dev: <b>Linux X Mrx</b></div>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div class="role-badge role-admin">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>Admin Lifetime</span>
+      </div>
+      <button class="btn-outline" onclick="switchToClientPreview()">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Vista Cliente</span>
+      </button>
+      <button class="btn-outline" onclick="logout()">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        <span>Esci</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="dashboard-container">
+    
+    <!-- Admin Stat Cards -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Clienti Totali</span>
+          <svg class="icon stat-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div class="stat-value" id="adminTotalClients" style="color: var(--purple);">0</div>
+        <div class="stat-desc">Licenze attive / gestite</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Processi Attivi</span>
+          <svg class="icon stat-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        </div>
+        <div class="stat-value" id="adminRunningProcs" style="color: var(--green);">0 / 3</div>
+        <div class="stat-desc">Demoni operativi</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Target Globali</span>
+          <svg class="icon stat-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </div>
+        <div class="stat-value" id="adminTargetCount" style="color: var(--blue);">0</div>
+        <div class="stat-desc">ids.json</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Account nel Database</span>
+          <svg class="icon stat-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <div class="stat-value" id="adminAccountCount" style="color: var(--yellow);">0</div>
+        <div class="stat-desc">accounts.json / acc / xrom</div>
+      </div>
+    </div>
+
+    <!-- Client Management Panel -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+          <span>Gestione Clienti & Generatore Licenze</span>
+        </div>
+        <button class="btn-sm" onclick="loadClients()">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          <span>Ricarica</span>
+        </button>
+      </div>
+      <div class="panel-body">
+        
+        <!-- Form Generazione Nuova Chiave Cliente -->
+        <div style="background: var(--card-inner); padding: 16px; border-radius: 8px; border: 1px solid var(--border);">
+          <div style="font-size: 11px; font-weight: 700; margin-bottom: 12px; color: var(--red); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 6px;">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Emetti Nuova Licenza Cliente
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) auto; gap: 10px; align-items: center;">
+            <input type="text" id="newClientUsername" placeholder="Username Account">
+            <input type="text" id="newClientPassword" placeholder="Password (opzionale)">
+            <select id="newClientType">
+              <option value="monthly">Mensile (30 Giorni)</option>
+              <option value="monthly60">Bimestrale (60 Giorni)</option>
+              <option value="monthly90">Trimestrale (90 Giorni)</option>
+              <option value="lifetime">Lifetime (Illimitata)</option>
+            </select>
+            <input type="text" id="customClientKey" placeholder="Key Personalizzata (opzionale)">
+            <button class="btn-sm btn-start" style="padding: 12px 18px;" onclick="createClientLicense()">
+              <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Crea Account</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Tabella Clienti Esistenti -->
+        <div class="data-table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Username</th>
+                <th>Password</th>
+                <th>License Key</th>
+                <th>Tipo</th>
+                <th>Scadenza</th>
+                <th>Target</th>
+                <th>Hardware ID</th>
+                <th>Stato</th>
+                <th style="width: 220px;">Azioni</th>
+              </tr>
+            </thead>
+            <tbody id="clientsTableBody"></tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Bot Process Control & Account Imports -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      
+      <!-- Bot Daemons -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg class="icon" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>Processi Bot (xSpam, xM9, xRom)</span>
+          </div>
+          <button class="btn-sm" onclick="refreshAdminData()">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+            <span>Stato</span>
+          </button>
+        </div>
+        <div class="panel-body" id="adminProcessList">
+          <!-- Popolato via JS -->
+        </div>
+      </div>
+
+      <!-- Import Accounts -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            <span>Archivio Account Bot</span>
+          </div>
+          <button class="btn-sm" onclick="importAccountsAdmin()">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Importa accont.txt</span>
+          </button>
+        </div>
+        <div class="panel-body">
+          <div style="display: flex; gap: 10px; margin-bottom: 8px;">
+            <select id="adminAccountSelect" onchange="loadAdminAccounts()">
+              <option value="spam">accounts.json (Spam)</option>
+              <option value="m9">acc.json (M9)</option>
+              <option value="rom">xrom.json (Rom)</option>
+            </select>
+          </div>
+          <div class="data-table-container" style="max-height: 180px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>UID</th>
+                  <th>Password</th>
+                </tr>
+              </thead>
+              <tbody id="adminAccountsTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Admin Terminal -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg class="icon" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          <span>Terminale di Sistema (Real-Time Engine Logs)</span>
+        </div>
+        <button class="btn-sm" onclick="clearAdminLogs()">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+          <span>Pulisci</span>
+        </button>
+      </div>
+      <div class="panel-body">
+        <div class="terminal-window" id="adminTerminal"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <b>Linux X Mrx</b> &bull; Admin Master Suite &bull; Bot dev: <b>Linux X Mrx</b>
+  </footer>
+</section>
+
+
+<!-- ========================================================
+     3. CLIENT DASHBOARD VIEW (MONTHLY KEY)
+======================================================== -->
+<section id="clientView" class="view" style="flex-direction: column;">
+  <header class="navbar">
+    <div class="nav-left">
+      <div class="logo-box">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+      </div>
+      <div>
+        <div class="nav-title">Linux X Mrx — Portale Clienti</div>
+        <div class="nav-dev">Bot dev: <b>Linux X Mrx</b></div>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div class="role-badge role-client">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+        <span>Cliente Mensile</span>
+      </div>
+      <button class="btn-outline" id="btnBackToAdmin" style="display:none;" onclick="switchToAdmin()">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        <span>Torna ad Admin</span>
+      </button>
+      <button class="btn-outline" onclick="logout()">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+        <span>Esci</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="dashboard-container">
+    
+    <!-- Client Hero Banner -->
+    <div class="client-hero">
+      <div>
+        <h2>Benvenuto, <span id="clientUsernameDisplay" style="color: var(--blue);">Cliente</span></h2>
+        <p>Il sistema Linux X Mrx è operativo. Configura i target UID per avviare il flusso automatico.</p>
+      </div>
+      <div>
+        <div style="font-size: 10px; text-transform: uppercase; color: var(--muted); font-weight: 700; letter-spacing: 0.05em; display:flex; align-items:center; gap:6px;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Scadenza Abbonamento
+        </div>
+        <div id="clientExpiryDisplay" style="font-size: 15px; font-weight: 800; color: #fff; font-family: var(--mono); margin-top:2px;">Caricamento...</div>
+      </div>
+    </div>
+
+    <!-- Client Status Grid -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Tipo Licenza</span>
+          <svg class="icon stat-icon" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        </div>
+        <div class="stat-value" id="clientLicenseTypeDisplay" style="color: var(--blue);">MONTHLY</div>
+        <div class="stat-desc">Accesso cliente attivo</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Stato Bot Core</span>
+          <svg class="icon stat-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 10"/></svg>
+        </div>
+        <div class="stat-value" style="color: var(--green);">ONLINE</div>
+        <div class="stat-desc">Cluster operativo</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">I Tuoi Target in Coda</span>
+          <svg class="icon stat-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        </div>
+        <div class="stat-value" id="clientTargetCount" style="color: var(--yellow);">0</div>
+        <div class="stat-desc">Target impostati</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Hardware ID</span>
+          <svg class="icon stat-icon" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div class="stat-value" id="clientHwidShort" style="font-size: 14px; color: var(--muted);">--</div>
+        <div class="stat-desc">Dispositivo associato</div>
+      </div>
+    </div>
+
+    <!-- Client Operational Area -->
+    <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px;">
+      
+      <!-- Inserimento Target -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            <span>Invia Target al Bot</span>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div>
+              <label style="font-size: 11px; font-weight:700; color: var(--muted); margin-bottom: 6px; display: flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:0.04em;">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/></svg>
+                UID Destinatario
+              </label>
+              <input type="text" id="clientTargetUid" placeholder="Es. 1000859423984">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <div>
+                <label style="font-size: 11px; font-weight:700; color: var(--muted); margin-bottom: 6px; display: flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:0.04em;">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                  Modalità
+                </label>
+                <select id="clientTargetMode">
+                  <option value="Spam">Spam</option>
+                  <option value="M9">M9</option>
+                  <option value="Rom">Rom</option>
+                  <option value="SpmRoom">SpmRoom</option>
+                  <option value="InvRoom">InvRoom (Invito Entra in Stanza)</option>
+                  <option value="All">All</option>
+                  <option value="Visits">Visits</option>
+                  <option value="FriendsRequests">FriendsRequests</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight:700; color: var(--muted); margin-bottom: 6px; display: flex; align-items:center; gap:6px; text-transform:uppercase; letter-spacing:0.04em;">
+                  <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Intervallo Loop
+                </label>
+                <input type="text" id="clientTargetLoop" placeholder="0 = continuo">
+              </div>
+            </div>
+
+            <button class="btn-primary" onclick="clientAddTarget()">
+              <svg class="icon" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              <span>Accoda Target al Bot</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- I Miei Target -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <svg class="icon" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            <span>Target Attivi</span>
+          </div>
+          <button class="btn-sm" onclick="loadClientTargets()">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>
+            <span>Aggiorna</span>
+          </button>
+        </div>
+        <div class="panel-body">
+          <div class="data-table-container" style="max-height: 220px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>UID</th>
+                  <th>Modalità</th>
+                  <th>Loop</th>
+                  <th>Stato</th>
+                  <th style="min-width: 140px; text-align: center;">Azioni</th>
+                </tr>
+              </thead>
+              <tbody id="clientTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Client Notification Console -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span>Feed Attività Bot</span>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="terminal-window" id="clientTerminal"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    <b>Linux X Mrx</b> &bull; Portale Clienti &bull; Bot dev: <b>Linux X Mrx</b>
+  </footer>
+</section>
+
+<!-- ========================================================
+     JAVASCRIPT LOGIC
+======================================================== -->
+<script>
+  const CONFIG = {
+    ENDPOINT: "https://my-auth-kohl.vercel.app/api/v1/validate-license?allow_plaintext=1",
+    APP_ID: "b8bb56a4-4390-424c-81df-0c4d0760c673",
+    API_SECRET: "19c9925f9ed98553424182d6206e1ac27ae69042a5a409ea66bd3663262c8221"
+  };
+
+  let currentUserSession = null;
+
+  async function sha256Hex(str) {
+    const data = new TextEncoder().encode(str);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    return Array.from(new Uint8Array(hashBuffer))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase();
+  }
+
+  async function getWebHWID() {
+    let hwid = localStorage.getItem("enigma_web_hwid");
+    if (!hwid) {
+      const seed = crypto.randomUUID() + "::" + navigator.userAgent + "::enigma-web-v2";
+      hwid = await sha256Hex(seed);
+      localStorage.setItem("enigma_web_hwid", hwid);
+    }
+    return hwid;
+  }
+
+  getWebHWID().then(hwid => {
+    document.getElementById("loginHwidDisplay").textContent = hwid;
+  });
+
+  /* ----------------- VALIDATE LICENSE ----------------- */
+  async function validateLicense() {
+    const userInput = document.getElementById("loginUsername") ? document.getElementById("loginUsername").value.trim() : "";
+    const passInput = document.getElementById("loginPassword") ? document.getElementById("loginPassword").value.trim() : "";
+    const keyInput = document.getElementById("licenseKey").value.trim();
+    const statusEl = document.getElementById("statusMessage");
+    const btn = document.getElementById("loginBtn");
+
+    if (!userInput && !keyInput) {
+      statusEl.innerHTML = `<div class="alert alert-danger"><span>Inserisci Username e License Key.</span></div>`;
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = `<span>Autenticazione in corso...</span>`;
+    statusEl.innerHTML = "";
+
+    try {
+      const hwid = await getWebHWID();
+
+      // 1. Prova verifica locale (Master Key o Clienti emessi dall'Admin)
+      let localRes = await fetch("/api/verify-client", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: userInput, password: passInput, key: keyInput, hwid: hwid })
+      }).then(r => r.json()).catch(() => null);
+
+      if (localRes && (localRes.valid || localRes.status === "valid")) {
+        const rememberEl = document.getElementById("rememberCredentials");
+        if (!rememberEl || rememberEl.checked) {
+          try {
+            localStorage.setItem("spm_saved_credentials", JSON.stringify({
+              username: userInput,
+              password: passInput,
+              key: localRes.key || keyInput
+            }));
+          } catch (e) {}
+        } else {
+          localStorage.removeItem("spm_saved_credentials");
+        }
+
+        handleSuccessfulLogin({
+          key: localRes.key || keyInput,
+          role: localRes.role, // 'admin' o 'client'
+          type: localRes.license_type || (localRes.days_left === "Lifetime" ? "Lifetime" : "Monthly"),
+          expires_at: localRes.expires_at || localRes.days_left || "30 Giorni",
+          username: localRes.username || localRes.name || userInput || "Utente",
+          hwid: hwid
+        });
+        return;
+      }
+
+      const errMsg = (localRes && (localRes.message || localRes.error)) ? (localRes.message || localRes.error) : "Credenziali non valide o HWID non registrato.";
+      statusEl.innerHTML = `<div class="alert alert-danger"><span>${errMsg}</span></div>`;
+    } catch (err) {
+      statusEl.innerHTML = `<div class="alert alert-danger"><span>Errore di connessione: ${err.message}</span></div>`;
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = `
+        <svg class="icon" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+        <span>Accedi al Pannello</span>
+      `;
+    }
+  }
+
+  function handleSuccessfulLogin(session) {
+    currentUserSession = session;
+    sessionStorage.setItem("auth_user", JSON.stringify(session));
+
+    const statusEl = document.getElementById("statusMessage");
+    statusEl.innerHTML = `<div class="alert alert-success"><span>Autenticazione autorizzata. Apertura sessione...</span></div>`;
+
+    setTimeout(() => {
+      document.getElementById("loginView").classList.remove("active");
+      if (session.role === "admin") {
+        showAdminView(session);
+      } else {
+        showClientView(session);
+      }
+    }, 500);
+  }
+
+  /* ----------------- ADMIN VIEW ----------------- */
+  function showAdminView(session) {
+    document.getElementById("loginView").classList.remove("active");
+    document.getElementById("clientView").classList.remove("active");
+    document.getElementById("adminView").classList.add("active");
+
+    logAdmin("AUTH", `Accesso autorizzato come Master Admin (Lifetime Key).`, "success");
+    loadClients();
+    refreshAdminData();
+  }
+
+  async function loadClients() {
+    try {
+      const res = await fetch("/api/admin/clients").then(r => r.json());
+      const clients = res.clients || [];
+      document.getElementById("adminTotalClients").textContent = clients.length;
+
+      const tbody = document.getElementById("clientsTableBody");
+      if (clients.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:16px;">Nessun cliente registrato nel database.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = clients.map(c => {
+        const isBanned = c.status === "banned";
+        const typeColor = c.type === "lifetime" ? "var(--red)" : "var(--blue)";
+        return `
+          <tr>
+            <td><strong>${esc(c.username || c.name || 'Cliente')}</strong></td>
+            <td><code style="color:var(--yellow); font-weight:700;">${esc(c.password || '---')}</code></td>
+            <td><code style="color:var(--text); font-weight:700;">${esc(c.key)}</code></td>
+            <td><span style="color:${typeColor}; font-weight:700;">${esc(c.type.toUpperCase())}</span></td>
+            <td>${esc(c.expires_at)}</td>
+            <td><span class="proc-badge badge-running">${(c.targets || []).length} attivi</span></td>
+            <td><span style="font-size:10px; color:${c.hwid ? 'var(--green)' : 'var(--muted)'};">${c.hwid ? c.hwid.slice(0, 14) + '...' : 'In attesa'}</span></td>
+            <td>
+              <span class="proc-badge ${isBanned ? 'badge-stopped' : 'badge-running'}">
+                ${isBanned ? 'SOSPESO' : 'ATTIVO'}
+              </span>
+            </td>
+            <td>
+              <div style="display:flex; gap:6px;">
+                <button class="btn-sm btn-warn" title="Resetta associazione HWID" onclick="resetClientHwid('${esc(c.key)}')">Reset HWID</button>
+                <button class="btn-sm" onclick="toggleClientStatus('${esc(c.key)}')">${isBanned ? 'Sblocca' : 'Blocca'}</button>
+                <button class="btn-sm btn-stop" onclick="deleteClientLicense('${esc(c.key)}')">Elimina</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    } catch (e) {
+      logAdmin("ERR", "Errore caricamento lista clienti: " + e.message, "error");
+    }
+  }
+
+  async function createClientLicense() {
+    const username = document.getElementById("newClientUsername").value.trim() || "Cliente";
+    const password = document.getElementById("newClientPassword").value.trim();
+    const typeSelect = document.getElementById("newClientType").value;
+    const customKey = document.getElementById("customClientKey").value.trim();
+
+    let type = "monthly";
+    let days = 30;
+    if (typeSelect === "monthly60") { days = 60; }
+    else if (typeSelect === "monthly90") { days = 90; }
+    else if (typeSelect === "lifetime") { type = "lifetime"; days = 0; }
+
+    const res = await fetch("/api/admin/clients/create", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username, password, type, days, key: customKey })
+    }).then(r => r.json());
+
+    if (res.status === "created") {
+      logAdmin("CLIENT", `Creato Account [${res.client.username}] Password: [${res.client.password}] Key: ${res.client.key}`, "success");
+      document.getElementById("newClientUsername").value = "";
+      document.getElementById("newClientPassword").value = "";
+      document.getElementById("customClientKey").value = "";
+      loadClients();
+    }
+  }
+
+  async function resetClientHwid(key) {
+    await fetch("/api/admin/clients/reset_hwid", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key })
+    });
+    logAdmin("CLIENT", `HWID resettato per la chiave: ${key}`, "warn");
+    loadClients();
+  }
+
+  async function toggleClientStatus(key) {
+    await fetch("/api/admin/clients/toggle", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key })
+    });
+    logAdmin("CLIENT", `Stato licenza aggiornato per: ${key}`, "info");
+    loadClients();
+  }
+
+  async function deleteClientLicense(key) {
+    if (!confirm(`Confermi l'eliminazione della licenza ${key}?`)) return;
+    await fetch("/api/admin/clients/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key })
+    });
+    logAdmin("CLIENT", `Licenza cancellata: ${key}`, "error");
+    loadClients();
+  }
+
+  async function refreshAdminData() {
+    const s = await fetch("/api/status").then(r => r.json()).catch(() => null);
+    if (!s) return;
+
+    const procNames = Object.keys(s.processes);
+    let running = 0;
+    document.getElementById("adminProcessList").innerHTML = procNames.map(name => {
+      const p = s.processes[name];
+      if (p.running) running++;
+      return `
+        <div class="proc-row">
+          <div class="proc-info">
+            <strong>${esc(name.toUpperCase())}</strong>
+            <span class="proc-badge ${p.running ? 'badge-running' : 'badge-stopped'}">
+              ${p.running ? 'PID ' + esc(p.pid) : 'OFFLINE'}
+            </span>
+            <span style="font-size:11px; color:var(--muted);">${esc(p.script)}</span>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn-sm btn-start" onclick="adminProc('${name}','start')">Start</button>
+            <button class="btn-sm btn-stop" onclick="adminProc('${name}','stop')">Stop</button>
+            <button class="btn-sm" onclick="adminProc('${name}','restart')">Restart</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    document.getElementById("adminRunningProcs").textContent = `${running} / ${procNames.length}`;
+    document.getElementById("adminTargetCount").textContent = s.ids;
+    document.getElementById("adminAccountCount").textContent = Object.values(s.counts).reduce((a,b)=>a+b, 0);
+
+    loadAdminAccounts();
+  }
+
+  async function adminProc(name, action) {
+    await fetch(`/api/process/${encodeURIComponent(name)}/${action}`, { method: 'POST' });
+    logAdmin("BOT", `Demone [${name}] azione: ${action}`, "info");
+    refreshAdminData();
+  }
+
+  async function loadAdminAccounts() {
+    const file = document.getElementById("adminAccountSelect").value;
+    const a = await fetch(`/api/accounts?file=${encodeURIComponent(file)}`).then(r => r.json()).catch(() => null);
+    if (a && a.accounts) {
+      document.getElementById("adminAccountsTableBody").innerHTML = a.accounts.map(acc => `
+        <tr>
+          <td>${esc(acc.uid)}</td>
+          <td>${esc(acc.password)}</td>
+        </tr>
+      `).join("");
+    }
+  }
+
+  async function importAccountsAdmin() {
+    const file = document.getElementById("adminAccountSelect").value;
+    await fetch("/api/accounts/import", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ file })
+    });
+    logAdmin("ACC", `Importato accont.txt nel database ${file}`, "success");
+    refreshAdminData();
+  }
+
+  function logAdmin(tag, text, type = "info") {
+    const consoleEl = document.getElementById("adminTerminal");
+    const now = new Date();
+    const timeStr = now.toTimeString().split(" ")[0];
+    const line = document.createElement("div");
+    line.className = "log-line";
+    line.innerHTML = `<span class="log-time">[${timeStr}]</span> <span class="log-tag ${type}">[${tag}]</span> <span class="log-text">${text}</span>`;
+    consoleEl.appendChild(line);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
+  function clearAdminLogs() {
+    document.getElementById("adminTerminal").innerHTML = "";
+  }
+
+  function switchToClientPreview() {
+    document.getElementById("adminView").classList.remove("active");
+    document.getElementById("clientView").classList.add("active");
+    document.getElementById("btnBackToAdmin").style.display = "inline-flex";
+    showClientView(currentUserSession);
+  }
+
+  function switchToAdmin() {
+    document.getElementById("clientView").classList.remove("active");
+    document.getElementById("adminView").classList.add("active");
+  }
+
+  /* ----------------- CLIENT VIEW ----------------- */
+  function showClientView(session) {
+    document.getElementById("loginView").classList.remove("active");
+    document.getElementById("adminView").classList.remove("active");
+    document.getElementById("clientView").classList.add("active");
+
+    document.getElementById("clientUsernameDisplay").textContent = session.username || "Cliente";
+    document.getElementById("clientExpiryDisplay").textContent = session.expires_at || "30 Giorni";
+    document.getElementById("clientLicenseTypeDisplay").textContent = session.type.toUpperCase();
+    document.getElementById("clientHwidShort").textContent = session.hwid ? session.hwid.slice(0, 14) + "..." : "Vincolato";
+
+    logClient("AUTH", `Sessione sincronizzata con Linux X Mrx.`, "success");
+    loadClientTargets();
+  }
+
+  async function loadClientTargets() {
+    try {
+      const key = currentUserSession ? currentUserSession.key : "";
+      const res = await fetch("/api/client/targets?key=" + encodeURIComponent(key)).then(r => r.json());
+      const ids = res.targets || res.ids || [];
+      document.getElementById("clientTargetCount").textContent = ids.length;
+
+      const tbody = document.getElementById("clientTableBody");
+      if (ids.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:16px;">Nessun target configurato per questo account.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = ids.map(i => {
+        const isStopped = i.status === "stopped" || i.active === false;
+        const statusBadge = isStopped
+          ? `<span class="proc-badge badge-stopped">PAUSA</span>`
+          : `<span class="proc-badge badge-running">ATTIVO</span>`;
+        const toggleBtn = isStopped
+          ? `<button class="btn-sm btn-start" style="padding:2px 8px; font-size:11px;" onclick="clientToggleTarget('${esc(i.uid)}', 'start')">Avvia</button>`
+          : `<button class="btn-sm" style="padding:2px 8px; font-size:11px; background:#d29922; color:#000; font-weight:700;" onclick="clientToggleTarget('${esc(i.uid)}', 'stop')">Stop</button>`;
+
+        return `
+          <tr>
+            <td><strong>${esc(i.uid)}</strong></td>
+            <td><span style="color:var(--blue); font-weight:700;">${esc(i.mode)}</span></td>
+            <td>${esc(i.loop_minutes || 0)} min</td>
+            <td>${statusBadge}</td>
+            <td style="display:flex; gap:6px; justify-content:center;">
+              ${toggleBtn}
+              <button class="btn-sm btn-stop" style="padding:2px 8px; font-size:11px;" onclick="clientDelTarget('${esc(i.uid)}')">Elimina</button>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    } catch (e) {
+      logClient("ERR", "Errore caricamento target: " + e.message, "error");
+    }
+  }
+
+  async function clientAddTarget() {
+    const uid = document.getElementById("clientTargetUid").value.trim();
+    const mode = document.getElementById("clientTargetMode").value;
+    const loop = document.getElementById("clientTargetLoop").value.trim() || "0";
+    const key = currentUserSession ? currentUserSession.key : "";
+
+    if (!uid || !/^\d+$/.test(uid)) {
+      alert("Inserisci un UID target valido (solo numeri)!");
+      return;
+    }
+
+    const res = await fetch("/api/client/targets/add", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, uid, mode, loop })
+    }).then(r => r.json());
+
+    if (res.error) {
+      logClient("ERR", `Errore aggiunta: ${res.error}`, "error");
+      alert(res.error);
+      return;
+    }
+
+    logClient("ORDER", `Target salvato nel tuo account: [${uid}] - Modalità: ${mode}`, "success");
+    document.getElementById("clientTargetUid").value = "";
+    document.getElementById("clientTargetLoop").value = "";
+    loadClientTargets();
+  }
+
+  async function clientDelTarget(uid) {
+    const key = currentUserSession ? currentUserSession.key : "";
+    await fetch("/api/client/targets/delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key, uid })
+    });
+    logClient("ORDER", `Target [${uid}] rimosso dal tuo account.`, "warn");
+    loadClientTargets();
+  }
+
+  async function clientToggleTarget(uid, action) {
+    const key = currentUserSession ? currentUserSession.key : "";
+    try {
+      const res = await fetch("/api/client/targets/toggle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key, uid, action })
+      }).then(r => r.json());
+
+      if (res.status === "updated") {
+        logClient("ORDER", `Target [${uid}] -> ${res.target_status.toUpperCase()}.`, res.target_status === "active" ? "success" : "warn");
+        loadClientTargets();
+      } else {
+        alert("Errore aggiornamento target: " + (res.error || "Sconosciuto"));
+      }
+    } catch (e) {
+      logClient("ERR", "Errore: " + e.message, "error");
+    }
+  }
+
+  function logClient(tag, text, type = "info") {
+    const consoleEl = document.getElementById("clientTerminal");
+    const now = new Date();
+    const timeStr = now.toTimeString().split(" ")[0];
+    const line = document.createElement("div");
+    line.className = "log-line";
+    line.innerHTML = `<span class="log-time">[${timeStr}]</span> <span class="log-tag ${type}">[${tag}]</span> <span class="log-text">${text}</span>`;
+    consoleEl.appendChild(line);
+    consoleEl.scrollTop = consoleEl.scrollHeight;
+  }
+
+  function logout() {
+    sessionStorage.removeItem("auth_user");
+    currentUserSession = null;
+    document.getElementById("adminView").classList.remove("active");
+    document.getElementById("clientView").classList.remove("active");
+    document.getElementById("loginView").classList.add("active");
+    document.getElementById("statusMessage").innerHTML = "";
+    document.getElementById("btnBackToAdmin").style.display = "none";
+
+    const savedCreds = localStorage.getItem("spm_saved_credentials");
+    if (savedCreds) {
+      try {
+        const c = JSON.parse(savedCreds);
+        if (c.username && document.getElementById("loginUsername")) document.getElementById("loginUsername").value = c.username;
+        if (c.password && document.getElementById("loginPassword")) document.getElementById("loginPassword").value = c.password;
+        if (c.key && document.getElementById("licenseKey")) document.getElementById("licenseKey").value = c.key;
+      } catch (e) {}
+    } else {
+      if (document.getElementById("loginUsername")) document.getElementById("loginUsername").value = "";
+      if (document.getElementById("loginPassword")) document.getElementById("loginPassword").value = "";
+      document.getElementById("licenseKey").value = "";
+    }
+  }
+
+  function esc(v) {
+    return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  window.addEventListener("DOMContentLoaded", () => {
+    // Ripristino credenziali salvate nel modulo di login
+    const savedCreds = localStorage.getItem("spm_saved_credentials");
+    if (savedCreds) {
+      try {
+        const c = JSON.parse(savedCreds);
+        if (c.username && document.getElementById("loginUsername")) document.getElementById("loginUsername").value = c.username;
+        if (c.password && document.getElementById("loginPassword")) document.getElementById("loginPassword").value = c.password;
+        if (c.key && document.getElementById("licenseKey")) document.getElementById("licenseKey").value = c.key;
+      } catch (e) {}
+    }
+
+    const saved = sessionStorage.getItem("auth_user");
+    if (saved) {
+      try {
+        const session = JSON.parse(saved);
+        currentUserSession = session;
+        if (session.role === "admin") {
+          showAdminView(session);
+        } else {
+          showClientView(session);
+        }
+      } catch (e) {
+        sessionStorage.removeItem("auth_user");
+      }
+    }
+  });
+
+  ["loginUsername", "loginPassword", "licenseKey"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") validateLicense();
+      });
+    }
+  });
+
+  /* ----------------- CLEAN RED LINE MOUSE TRAIL ----------------- */
+  (() => {
+    const canvas = document.getElementById("mouseFxCanvas");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    let width = canvas.width = window.innerWidth;
+    let height = canvas.height = window.innerHeight;
+
+    window.addEventListener("resize", () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    });
+
+    const points = [];
+    const MAX_POINTS = 20;
+
+    window.addEventListener("mousemove", (e) => {
+      points.push({ x: e.clientX, y: e.clientY });
+      if (points.length > MAX_POINTS) points.shift();
+    });
+
+    window.addEventListener("mouseout", () => {
+      points.length = 0;
+    });
+
+    function animate() {
+      ctx.clearRect(0, 0, width, height);
+
+      if (points.length > 2) {
+        for (let i = 0; i < points.length - 1; i++) {
+          const p1 = points[i];
+          const p2 = points[i + 1];
+          const progress = (i + 1) / points.length;
+
+          ctx.beginPath();
+          ctx.moveTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.strokeStyle = `rgba(239, 68, 68, ${progress * 0.95})`;
+          ctx.lineWidth = Math.max(1, progress * 3);
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.stroke();
+        }
+        // Smoothly shrink tail
+        points.shift();
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    animate();
+  })();
+</script>
+
+</body>
+</html>

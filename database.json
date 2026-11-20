@@ -1,0 +1,24 @@
+[
+    {
+        "id": "cli_1795198412_1",
+        "key": "BOT-AUTH-LINX",
+        "username": "Linux",
+        "password": "1",
+        "type": "monthly",
+        "expires_at": "2026-12-20 19:13",
+        "exp_timestamp": 1797790412.2154875,
+        "hwid": "1222CA33369BB6DD4032FE360CA33C27302809F065B37C6E1E2C4F801C20CCC0",
+        "status": "active",
+        "created_at": "2026-11-20 19:13",
+        "targets": [
+            {
+                "uid": "797499953",
+                "mode": "SpmRoom",
+                "loop_minutes": 0.0,
+                "time": 1795198899.8355844,
+                "status": "active",
+                "active": true
+            }
+        ]
+    }
+]
